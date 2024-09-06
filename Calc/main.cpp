@@ -1,4 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
+#include<iostream>
 #include<Windows.h>
 #include<limits>
 #include<stdio.h>
@@ -9,12 +10,14 @@ CONST CHAR g_sz_WINDOW_CLASS[] = "Calc_PD_311";
 CONST INT g_i_START_X = 10;
 CONST INT g_i_START_Y = 10;
 
-CONST INT g_i_BUTTON_SIZE = 50;
+CONST INT g_i_BUTTON_SIZE = 64;
 CONST INT g_i_INTERVAL = 5;
 CONST INT g_i_BUTTON_DOUBLE_SIZE = g_i_BUTTON_SIZE * 2 + g_i_INTERVAL;
 
 CONST INT g_i_DISPLAY_WIDTH = (g_i_BUTTON_SIZE + g_i_INTERVAL) * 5;
-CONST INT g_i_DISPLAY_HEIGHT = 22;
+CONST INT g_i_DISPLAY_HEIGHT = 64;
+CONST INT g_i_FONT_HEIGHT = g_i_DISPLAY_HEIGHT - 2;
+CONST INT g_i_FONT_WIDTH = g_i_FONT_HEIGHT / 2.5;
 
 CONST INT g_i_TITLE_HEIGHT = 39;
 CONST INT g_i_WINDOW_WIDTH = g_i_DISPLAY_WIDTH + g_i_START_X * 2 + 16;
@@ -27,6 +30,16 @@ CONST INT g_i_START_X_CONTROL_BUTTONS = g_i_START_X_BUTTON + (g_i_BUTTON_SIZE + 
 
 INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 VOID PushButton(HWND parent, INT id);
+
+enum COLOR		{ BLUE, GREEN, MERCURY };
+enum ELEMENT	{ WINDOW_BACKGROUND, DISPLAY_BACKGROUND, FOREGROUND};
+
+CONST COLORREF g_COLORS[][3] =
+{
+	{ RGB(0,0,200), RGB(0,0,100), RGB(255, 0,0) },
+	{ RGB(0,200,0), RGB(0,100,0), RGB(0, 255, 0)},
+	{ RGB(64,64,64), RGB(32,32,32), RGB(0, 255, 0)}
+};
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, INT nCmdShow)
 {
@@ -82,14 +95,21 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, IN
 }
 
 VOID SetSkin(HWND hwnd, LPSTR skin);
+VOID SetSkinFromDLL(HWND hwnd, LPSTR skin);
 
 INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	static CONST CHAR DEFAULT_SKIN[] = "square_green";
+	static CONST CHAR DEFAULT_SKIN[] = "square_blue";
+	static CHAR skin[MAX_PATH]{};
+	static COLOR color_scheme = COLOR::BLUE;
+
 	switch (uMsg)
 	{
 	case WM_CREATE:
 	{
+		AllocConsole();
+		freopen("CONOUT$", "w", stdout);
+		std::cout << "Hello Console" << std::endl;
 		RECT rectWindow;
 		RECT rectClient;
 		GetWindowRect(hwnd, &rectWindow);
@@ -99,12 +119,31 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		HWND hDisplay = CreateWindowEx
 		(
 			NULL, "Edit", "0",
-			WS_CHILD | WS_VISIBLE | WS_BORDER | ES_NUMBER | ES_RIGHT | ES_READONLY,
+			WS_CHILD | WS_VISIBLE | WS_BORDER | ES_NUMBER | ES_RIGHT /*| ES_READONLY*/,
 			g_i_START_X, g_i_START_Y,
 			g_i_DISPLAY_WIDTH, g_i_DISPLAY_HEIGHT,
 			hwnd, (HMENU)IDC_EDIT_DISPLAY,
 			NULL, NULL
 		);
+		AddFontResourceEx("Fonts\\digital-7\\digital-7.ttf", FR_PRIVATE, 0);
+		HFONT hFont = CreateFont
+		(
+			g_i_FONT_HEIGHT, g_i_FONT_WIDTH,	//Fontsize
+			0,		//”гол наклона
+			0,		//”гол наклона
+			500,	//Font weight
+			FALSE,	//Italic
+			FALSE,	//Underline
+			FALSE,	//Strikeout
+			DEFAULT_CHARSET,
+			OUT_CHARACTER_PRECIS,
+			CLIP_CHARACTER_PRECIS,
+			ANTIALIASED_QUALITY,
+			DEFAULT_PITCH | FF_DONTCARE,
+			"digital-7"
+		);
+		SendMessage(hDisplay, WM_SETFONT, (WPARAM)hFont, TRUE);
+
 		////////////////////// Digits: //////////////////////////
 		INT digit = 0;
 		CHAR sz_digit[2]{};
@@ -138,7 +177,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			NULL,
 			NULL
 		);
-		SetSkin(hwnd, (LPSTR)DEFAULT_SKIN);
+		//SetSkinFromDLL(hwnd, (LPSTR)DEFAULT_SKIN);
 		/*HANDLE hImageDigit0 = LoadImage(NULL, "ButtonsBMP\\square_blue\\button_0.bmp", IMAGE_BITMAP, g_i_BUTTON_DOUBLE_SIZE, g_i_BUTTON_SIZE, LR_LOADFROMFILE);
 		if (hImageDigit0 == NULL)
 		{
@@ -157,10 +196,24 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			MessageBox(hwnd, lpszMessageBuffer, "Error", MB_OK | MB_ICONERROR);
 		}
 		SendMessage(hButtonDigit0, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hImageDigit0);*/
+		/////////////////////////////////////////////////////////////
+		/*HINSTANCE hButtons = LoadLibrary("metal_mistral.dll");
+		HBITMAP hBmpDigit0 = (HBITMAP)LoadImage
+		(
+			hButtons,
+			MAKEINTRESOURCE(100),
+			IMAGE_BITMAP,
+			g_i_BUTTON_DOUBLE_SIZE,
+			g_i_BUTTON_SIZE,
+			LR_SHARED
+		);
+		FreeLibrary(hButtons);
+		SendMessage(hButtonDigit0, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBmpDigit0);*/
+		/////////////////////////////////////////////////////////////
 		CreateWindowEx
 		(
 			NULL, "Button", ".",
-			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_BITMAP,
 
 			g_i_START_X_BUTTON + g_i_BUTTON_DOUBLE_SIZE + g_i_INTERVAL,
 			g_i_START_Y_BUTTON + (g_i_BUTTON_SIZE + g_i_INTERVAL) * 3,
@@ -180,7 +233,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			CreateWindowEx
 			(
 				NULL, "Button", sz_operation,
-				WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+				WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_BITMAP,
 
 				g_i_START_X_OPERATIONS, g_i_START_Y_BUTTON + (g_i_BUTTON_SIZE + g_i_INTERVAL)*(3 - i),
 				g_i_BUTTON_SIZE, g_i_BUTTON_SIZE,
@@ -195,7 +248,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		CreateWindowEx
 		(
 			NULL, "Button", "<-",
-			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_BITMAP,
 
 			g_i_START_X_CONTROL_BUTTONS, g_i_START_Y_BUTTON,
 			g_i_BUTTON_SIZE, g_i_BUTTON_SIZE,
@@ -208,7 +261,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		CreateWindowEx
 		(
 			NULL, "Button", "C",
-			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_BITMAP,
 
 			g_i_START_X_CONTROL_BUTTONS, g_i_START_Y_BUTTON + g_i_BUTTON_SIZE + g_i_INTERVAL,
 			g_i_BUTTON_SIZE, g_i_BUTTON_SIZE,
@@ -222,7 +275,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		CreateWindowEx
 		(
 			NULL, "Button", "=",
-			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_BITMAP,
 
 			g_i_START_X_CONTROL_BUTTONS, g_i_START_Y_BUTTON + g_i_BUTTON_DOUBLE_SIZE + g_i_INTERVAL,
 			g_i_BUTTON_SIZE, g_i_BUTTON_DOUBLE_SIZE,
@@ -233,8 +286,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			NULL
 		);
 
-
-
+		SetSkinFromDLL(hwnd, (LPSTR)DEFAULT_SKIN);
 	}
 	break;
 	case WM_COMMAND:
@@ -409,20 +461,20 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CTLCOLOREDIT:
 	{
 		HDC hdc = (HDC)wParam;
-		SetBkMode(hdc, OPAQUE); SetBkColor(hdc, RGB(0, 0, 155));
-		SetBkColor(hdc, RGB(0, 0, 100));
-		HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 200));
-		SetTextColor(hdc, RGB(255, 0, 0));
+		SetBkMode(hdc, OPAQUE);
+		SetBkColor(hdc, g_COLORS[color_scheme][ELEMENT::DISPLAY_BACKGROUND]);
+		HBRUSH hBrush = CreateSolidBrush(g_COLORS[color_scheme][ELEMENT::WINDOW_BACKGROUND]);
+		SetTextColor(hdc, g_COLORS[color_scheme][ELEMENT::FOREGROUND]);
 		SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)hBrush);
 		SendMessage(hwnd, WM_ERASEBKGND, wParam, 0);
-		SendMessage(GetDlgItem(hwnd, IDC_EDIT_DISPLAY), WM_SETTEXT, 0, (LPARAM)"0");
+		//SendMessage(GetDlgItem(hwnd, IDC_EDIT_DISPLAY), WM_SETTEXT, 0, (LPARAM)"0");
 		////////////////////////////////////////////////////////////////
-		HWND hEditDisplay = GetDlgItem(hwnd, IDC_EDIT_DISPLAY);
+		/*HWND hEditDisplay = GetDlgItem(hwnd, IDC_EDIT_DISPLAY);
 		HDC hdcEditDisplay = GetDC(hEditDisplay);
 		SetBkMode(hdcEditDisplay, OPAQUE); SetBkColor(hdcEditDisplay, RGB(0, 0, 155));
 		HBRUSH hBrushDisplay = CreateSolidBrush(RGB(0, 0, 200));
 		SetTextColor(hdcEditDisplay, RGB(255, 0, 0));
-		ReleaseDC(hwnd, hdcEditDisplay);
+		ReleaseDC(hwnd, hdcEditDisplay);*/
 
 		return (LRESULT)hBrush;
 	}
@@ -436,12 +488,14 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_POPUP, (UINT_PTR)hSubMenu, "Skins");
 		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_GREEN, "Square green");
 		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_BLUE, "Square blue");
+		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_METAL_MISTRAL, "Metal Mistral");
 
 		BOOL item = TrackPopupMenuEx(hMainMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN | TPM_RETURNCMD, LOWORD(lParam), HIWORD(lParam), hwnd, NULL);
 		switch (item)
 		{
-		case CM_SQUARE_BLUE: SetSkin(hwnd,  (LPSTR)"square_blue"); break;
-		case CM_SQUARE_GREEN: SetSkin(hwnd, (LPSTR)"square_green"); break;
+		case CM_SQUARE_BLUE:	SetSkinFromDLL(hwnd, (LPSTR)"square_blue"); color_scheme=BLUE; break;
+		case CM_SQUARE_GREEN:	SetSkinFromDLL(hwnd, (LPSTR)"square_green"); color_scheme=GREEN; break;
+		case CM_METAL_MISTRAL:	SetSkinFromDLL(hwnd, (LPSTR)"metal_mistral"); color_scheme=MERCURY; break;
 		case CM_EXIT:		DestroyWindow(hwnd); break;
 		}
 
@@ -451,9 +505,15 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		SendMessage(hwnd, WM_CTLCOLOREDIT, (WPARAM)hdcEdit, 0);
 		ReleaseDC(hwnd, hdcEdit);
 		ReleaseDC(hwnd, hdc);
+		CHAR sz_buffer[MAX_PATH]{};
+		SendMessage(GetDlgItem(hwnd, IDC_EDIT_DISPLAY), WM_GETTEXT, MAX_PATH, (LPARAM)sz_buffer);
+		SendMessage(GetDlgItem(hwnd, IDC_EDIT_DISPLAY), WM_SETTEXT, 0, (LPARAM)sz_buffer);
 	}
 	break;
-	case WM_DESTROY:PostQuitMessage(0); break;
+	case WM_DESTROY:
+		FreeConsole();
+		PostQuitMessage(0);
+		break;
 	case WM_CLOSE:	DestroyWindow(hwnd); break;
 	default:		return DefWindowProc(hwnd, uMsg, wParam, lParam);
 	}
@@ -514,4 +574,26 @@ VOID SetSkin(HWND hwnd, LPSTR skin)
 #endif // DEBUG
 
 	}
+}
+
+VOID SetSkinFromDLL(HWND hwnd, LPSTR skin)
+{
+	HINSTANCE hButtons = LoadLibrary(skin);
+	CHAR sz_file[MAX_PATH]{};
+	for (int i = IDC_BUTTON_0; i <= IDC_BUTTON_EQUAL; i++)
+	{
+		HWND hButton = GetDlgItem(hwnd, i);
+		std::cout << i << "\t" << FormatLastError() << std::endl;
+		HBITMAP hImage = (HBITMAP)LoadImage
+		(
+			hButtons,
+			MAKEINTRESOURCE(i - IDC_BUTTON_0 + 100),
+			IMAGE_BITMAP,
+			i == IDC_BUTTON_0 ? g_i_BUTTON_DOUBLE_SIZE : g_i_BUTTON_SIZE,
+			i == IDC_BUTTON_EQUAL ? g_i_BUTTON_DOUBLE_SIZE : g_i_BUTTON_SIZE,
+			LR_SHARED
+		);
+		SendMessage(hButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hImage);
+	}
+	FreeLibrary(hButtons);
 }
