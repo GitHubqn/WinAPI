@@ -32,8 +32,10 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, IN
 	wClass.cbClsExtra = 0;
 	wClass.cbWndExtra = 0;
 
-	wClass.hIcon = (HICON)LoadImage(hInstance, "ICO\\txt.ico", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_LOADFROMFILE);
-	wClass.hIconSm = (HICON)LoadImage(hInstance, "ICO\\txt.ico", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_LOADFROMFILE);
+	wClass.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+	wClass.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+	//wClass.hIcon = (HICON)LoadImage(hInstance, "ICO\\txt.ico", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_LOADFROMFILE);
+	//wClass.hIconSm = (HICON)LoadImage(hInstance, "ICO\\txt.ico", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_LOADFROMFILE);
 	wClass.hCursor = LoadCursor(hInstance, IDC_ARROW);
 	HBITMAP background = (HBITMAP)LoadImage(hInstance, "IMG\\background.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 	wClass.hbrBackground = CreatePatternBrush(background);
@@ -70,11 +72,29 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, IN
 		return 0;
 	}
 	ShowWindow(hwnd, nCmdShow);
+	std::cout << "\n------------------------------------------------\n" << std::endl;
+	std::cout << lpCmdLine << std::endl;
+	CHAR sz_title[MAX_PATH]{};
+	if(strlen(lpCmdLine))LoadTextFileToEdit(GetDlgItem(hwnd, IDC_EDIT), lpCmdLine, sz_title);
+	std::cout << "\n------------------------------------------------\n" << std::endl;
 	UpdateWindow(hwnd);
 
 	//3)Çàïóñê öèêëà ñîîáùåíèé:
 	MSG msg;
-	while (GetMessage(&msg, hwnd, 0, NULL) > 0)
+	///////////////////////////////////////////////////////////////////////////////////
+	////	!!!!!!!!!		ÍÈÊÎÃÄÀ ÍÅ ÏÈØÈÒÅ ÇÄÅÑÜ 'hwnd'			!!!!!!!!!!!!!	///
+	////	!!!!!!!!!		ÍÈÊÎÃÄÀ ÍÅ ÏÈØÈÒÅ ÇÄÅÑÜ 'hwnd'			!!!!!!!!!!!!!	///
+	////	!!!!!!!!!		ÍÈÊÎÃÄÀ ÍÅ ÏÈØÈÒÅ ÇÄÅÑÜ 'hwnd'			!!!!!!!!!!!!!	///
+	////	!!!!!!!!!		ÍÈÊÎÃÄÀ ÍÅ ÏÈØÈÒÅ ÇÄÅÑÜ 'hwnd'			!!!!!!!!!!!!!	///
+	////	!!!!!!!!!		ÍÈÊÎÃÄÀ ÍÅ ÏÈØÈÒÅ ÇÄÅÑÜ 'hwnd'			!!!!!!!!!!!!!	///
+	////	!!!!!!!!!		ÍÈÊÎÃÄÀ ÍÅ ÏÈØÈÒÅ ÇÄÅÑÜ 'hwnd'			!!!!!!!!!!!!!	///
+	////	!!!!!!!!!		ÍÈÊÎÃÄÀ ÍÅ ÏÈØÈÒÅ ÇÄÅÑÜ 'hwnd'			!!!!!!!!!!!!!	///
+	////	!!!!!!!!!		ÍÈÊÎÃÄÀ ÍÅ ÏÈØÈÒÅ ÇÄÅÑÜ 'hwnd'			!!!!!!!!!!!!!	///
+	////	!!!!!!!!!		ÍÈÊÎÃÄÀ ÍÅ ÏÈØÈÒÅ ÇÄÅÑÜ 'hwnd'			!!!!!!!!!!!!!	///
+	////	!!!!!!!!!		ÍÈÊÎÃÄÀ ÍÅ ÏÈØÈÒÅ ÇÄÅÑÜ 'hwnd'			!!!!!!!!!!!!!	///
+	//while (GetMessage(&msg, hwnd, 0, NULL) > 0)
+	///////////////////////////////////////////////////////////////////////////////////
+	while (GetMessage(&msg, 0, 0, NULL) > 0)
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
@@ -104,7 +124,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		std::cout << "Client:" << clientRect.left << tab << clientRect.top << tab << clientRect.right << tab << clientRect.bottom << std::endl;
 		HWND hEdit = CreateWindowEx
 		(
-			NULL, RICHEDIT_CLASS, "Workspace",
+			WS_EX_CLIENTEDGE, RICHEDIT_CLASS, "",
 			WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
 			0, 0,
 			windowRect.right - windowRect.left,
@@ -140,6 +160,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		SendMessage(hStatus, SB_SETPARTS, sizeof(dimensions) / sizeof(dimensions[0]), (LPARAM)dimensions);
 
 		DragAcceptFiles(hwnd, TRUE);
+		//RegisterDragDrop();
 	}
 	break;
 	case WM_SIZE:
@@ -161,11 +182,13 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	break;
 	case WM_DROPFILES:
 	{
-		DragQueryFile((HDROP)wParam, 0, szFileName, MAX_PATH);
+		HDROP hDrop = (HDROP)wParam;
+		DragQueryFile(hDrop, 0, szFileName, MAX_PATH);
 		std::cout << "WM_DROPFILES: " << szFileName << std::endl;
 		HWND hEdit = GetDlgItem(hwnd, IDC_EDIT);
 		LoadTextFileToEdit(hEdit, szFileName, sz_title);
-		DragFinish((HDROP)wParam);
+		DragFinish(hDrop);
+		//UpdateWindow(hwnd);
 	}
 	break;
 	case WM_COMMAND:
